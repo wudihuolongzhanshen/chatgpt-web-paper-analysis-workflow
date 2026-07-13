@@ -86,6 +86,12 @@ py --version
 
 如果系统找不到 `py`，请安装 Windows 版 Python，并在安装时启用 Python Launcher 或将 Python 加入 PATH。
 
+### 2.6 快速启动
+git clone https://github.com/wudihuolongzhanshen/chatgpt-web-paper-analysis-workflow.git
+cd chatgpt-web-paper-analysis-workflow
+py -m pip install -r requirements.txt
+py workflow/local_server.py
+
 ## 3. 项目目录结构
 
 关键目录和文件：
