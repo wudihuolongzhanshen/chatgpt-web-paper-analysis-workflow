@@ -87,10 +87,18 @@ py --version
 如果系统找不到 `py`，请安装 Windows 版 Python，并在安装时启用 Python Launcher 或将 Python 加入 PATH。
 
 ### 2.6 快速启动
+```powershell
 git clone https://github.com/wudihuolongzhanshen/chatgpt-web-paper-analysis-workflow.git
+```
+```powershell
 cd chatgpt-web-paper-analysis-workflow
+```
+```powershell
 py -m pip install -r requirements.txt
+```
+```powershell
 py workflow/local_server.py
+```
 
 ## 3. 项目目录结构
 
