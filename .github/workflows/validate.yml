@@ -1,0 +1,36 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  syntax-checks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Validate Python
+        run: python -m compileall -q workflow
+
+      - name: Validate extension JavaScript
+        shell: pwsh
+        run: |
+          Get-ChildItem browser-extension -Filter *.js | ForEach-Object {
+            node --check $_.FullName
+          }
+
+      - name: Validate extension manifest
+        shell: pwsh
+        run: Get-Content browser-extension/manifest.json -Raw | ConvertFrom-Json | Out-Null

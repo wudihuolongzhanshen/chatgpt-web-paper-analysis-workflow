@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "本地论文逐篇分析",
+  "version": "1.1.1",
+  "description": "在已登录的 ChatGPT 网页中逐篇上传本地论文并归档分析结果。",
+  "permissions": ["storage", "tabs", "scripting", "debugger", "windows", "system.display", "clipboardRead"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "http://127.0.0.1:8765/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "论文分析队列"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

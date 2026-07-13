@@ -1,0 +1,32 @@
+# Local authentication and runtime state
+.workflow-token
+progress.csv
+
+# User papers and generated Word documents
+output/*
+!output/.gitkeep
+*.pdf
+*.docx
+~$*.docx
+.analysis.*.docx
+
+# Local archives and unrelated datasets
+*.zip
+*.7z
+*.rar
+
+# Python and editor caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Legacy local work files
+work/task-*.pdf

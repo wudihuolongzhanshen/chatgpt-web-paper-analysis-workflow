@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>论文分析队列</title>
+  <style>
+    html, body { min-width: 620px; min-height: 840px; }
+    body { box-sizing: border-box; font: 14px/1.45 system-ui, sans-serif; width: auto; margin: 0; padding: 16px; color: #172033; }
+    h1 { font-size: 17px; margin: 0 0 10px; }
+    label { display: block; margin-top: 8px; font-weight: 600; }
+    input[type="text"], input[type="password"] { box-sizing: border-box; width: 100%; margin-top: 3px; padding: 7px; border: 1px solid #c8cfdb; border-radius: 6px; }
+    select { flex: 1; padding: 7px; border: 1px solid #c8cfdb; border-radius: 6px; background: white; }
+    .buttons, .tools { display: flex; gap: 7px; margin-top: 10px; }
+    button { flex: 1; padding: 7px; border: 0; border-radius: 6px; cursor: pointer; }
+    #start { background: #1769e0; color: white; }
+    #stop { background: #e8ebf0; color: #172033; }
+    #deleteTasks { background: #fff0f0; color: #a12622; }
+    #pdfPicker { display: none; }
+    #dragOverlay { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; background: rgba(238,245,255,.96); color: #1769e0; font-size: 24px; font-weight: 700; text-align: center; border: 5px dashed #1769e0; pointer-events: none; }
+    #dragOverlay.visible { display: flex; }
+    #status { margin-top: 10px; padding: 8px; background: #f4f6f9; border-radius: 6px; word-break: break-word; }
+    .note { margin-top: 8px; color: #5d6573; font-size: 12px; }
+    .task-head { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+    .task-actions { display: flex; gap: 6px; }
+    .task-actions button { flex: none; padding: 5px 9px; }
+    #tasks { height: calc(100vh - 440px); min-height: 460px; overflow: auto; border: 1px solid #d9dee7; border-radius: 6px; margin-top: 5px; }
+    .task { display: grid; grid-template-columns: 20px 38px 1fr; gap: 5px; align-items: start; padding: 7px; border-bottom: 1px solid #edf0f4; font-weight: 400; margin: 0; }
+    .task:last-child { border-bottom: 0; }
+    .task small { color: #697386; }
+  </style>
+</head>
+<body>
+  <div id="dragOverlay">松开鼠标，创建本地论文任务</div>
+  <h1>论文分析队列</h1>
+  <label>本地服务地址<input id="baseUrl" type="text" value="http://127.0.0.1:8765"></label>
+  <label>扩展令牌<input id="token" type="password"></label>
+  <input id="pdfPicker" type="file" accept="application/pdf,.pdf" multiple>
+  <div class="tools">
+    <button id="choosePdfs">选择 PDF</button>
+    <button id="deleteTasks">删除所选</button>
+  </div>
+  <div class="task-head">
+    <strong>本地任务</strong>
+    <span class="task-actions"><button id="selectIncomplete">选择未完成</button><button id="selectAll">选择全部</button><button id="loadTasks">刷新</button></span>
+  </div>
+  <div id="tasks">请填写令牌并刷新列表</div>
+  <div class="tools">
+    <select id="manualStatus" aria-label="手动设置任务状态">
+      <option value="pending">设为 pending（待处理）</option>
+      <option value="needs_review">设为 needs_review（需复核）</option>
+      <option value="completed" selected>设为 completed（已完成）</option>
+      <option value="failed">设为 failed（失败）</option>
+    </select>
+    <button id="applyStatus">应用状态</button>
+  </div>
+  <div class="buttons"><button id="start">保存并开始</button><button id="stop">停止</button></div>
+  <div id="status">正在读取状态……</div>
+  <div class="note">可将多个 PDF 拖入窗口任意位置。PDF 只保存在对应 output 目录；删除所选会删除 PDF、Word、输出目录和任务记录。</div>
+  <script src="popup.js"></script>
+</body>
+</html>
