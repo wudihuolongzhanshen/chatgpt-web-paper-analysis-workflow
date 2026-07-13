@@ -181,6 +181,9 @@ class WorkflowHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/import-pdf":
                 self._import_pdf(query)
                 return
+            if parsed.path == "/api/open-output":
+                self._open_output()
+                return
             body = self._read_json()
             parts = parsed.path.strip("/").split("/")
             if len(parts) == 4 and parts[:2] == ["api", "tasks"] and parts[3] == "complete":
@@ -197,6 +200,14 @@ class WorkflowHandler(BaseHTTPRequestHandler):
                 self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
         except (ValueError, OSError, json.JSONDecodeError) as exc:
             self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+
+    def _open_output(self) -> None:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        subprocess.Popen(
+            ["explorer.exe", str(OUTPUT_DIR.resolve())],
+            close_fds=True,
+        )
+        self._json(HTTPStatus.OK, {"ok": True, "path": str(OUTPUT_DIR.resolve())})
 
     def _state(self) -> None:
         with LOCK:

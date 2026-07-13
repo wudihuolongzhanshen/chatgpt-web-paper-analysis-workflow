@@ -103,6 +103,14 @@ byId("loadTasks").addEventListener("click", async () => {
   } catch (error) { byId("status").textContent = error.message; }
 });
 
+byId("openOutput").addEventListener("click", async () => {
+  try {
+    await saveConnection();
+    const result = await call({type: "open-output"});
+    byId("status").textContent = `已打开：${result.path}`;
+  } catch (error) { byId("status").textContent = error.message; }
+});
+
 byId("selectIncomplete").addEventListener("click", () => {
   const wanted = new Set(tasks.filter(task => task.status !== "completed").map(task => task.task_id));
   const checkboxes = [...document.querySelectorAll('#tasks input[type="checkbox"]')];

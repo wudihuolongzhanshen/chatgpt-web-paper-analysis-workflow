@@ -15,6 +15,7 @@
     button { flex: 1; padding: 7px; border: 0; border-radius: 6px; cursor: pointer; }
     #start { background: #1769e0; color: white; }
     #stop { background: #e8ebf0; color: #172033; }
+    #openOutput { background: #eef5ff; color: #1458b8; }
     #deleteTasks { background: #fff0f0; color: #a12622; }
     #pdfPicker { display: none; }
     #dragOverlay { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; background: rgba(238,245,255,.96); color: #1769e0; font-size: 24px; font-weight: 700; text-align: center; border: 5px dashed #1769e0; pointer-events: none; }
@@ -38,6 +39,7 @@
   <input id="pdfPicker" type="file" accept="application/pdf,.pdf" multiple>
   <div class="tools">
     <button id="choosePdfs">选择 PDF</button>
+    <button id="openOutput">打开 output</button>
     <button id="deleteTasks">删除所选</button>
   </div>
   <div class="task-head">

@@ -148,6 +148,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         body: JSON.stringify({task_ids: message.taskIds})
       });
       sendResponse({ok: true, ...result});
+    } else if (message.type === "open-output") {
+      const result = await api("/api/open-output", {method: "POST", body: "{}"});
+      sendResponse({ok: true, ...result});
     } else if (message.type === "should-run-here") {
       const config = await settings();
       sendResponse({ok: true, shouldRun: Boolean(config.running && sender.tab?.id === config.controlledTabId)});
