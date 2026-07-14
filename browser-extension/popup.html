@@ -16,6 +16,7 @@
     #start { background: #1769e0; color: white; }
     #stop { background: #e8ebf0; color: #172033; }
     #openOutput { background: #eef5ff; color: #1458b8; }
+    #copyAnswerToWord { background: #eaf7ef; color: #176b3a; }
     #deleteTasks { background: #fff0f0; color: #a12622; }
     #pdfPicker { display: none; }
     #dragOverlay { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; background: rgba(238,245,255,.96); color: #1769e0; font-size: 24px; font-weight: 700; text-align: center; border: 5px dashed #1769e0; pointer-events: none; }
@@ -42,6 +43,7 @@
     <button id="openOutput">打开 output</button>
     <button id="deleteTasks">删除所选</button>
   </div>
+  <div class="tools"><button id="copyAnswerToWord">把当前回答归档到所选任务 Word</button></div>
   <div class="task-head">
     <strong>本地任务</strong>
     <span class="task-actions"><button id="selectIncomplete">选择未完成</button><button id="selectAll">选择全部</button><button id="loadTasks">刷新</button></span>

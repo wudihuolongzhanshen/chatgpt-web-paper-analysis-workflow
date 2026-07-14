@@ -50,7 +50,14 @@ async function sendToChatTab(message) {
   return tab.id;
 }
 
-async function trustedClick(tabId, x, y) {
+async function latestChatTab() {
+  const tabs = await chrome.tabs.query({url: "https://chatgpt.com/*"});
+  const tab = tabs.sort((left, right) => (right.lastAccessed || 0) - (left.lastAccessed || 0))[0];
+  if (!tab?.id) throw new Error("请先打开包含回答的 ChatGPT 标签页");
+  return tab;
+}
+
+async function focusTab(tabId) {
   const tab = await chrome.tabs.get(tabId);
   if (typeof tab.windowId === "number") {
     const window = await chrome.windows.get(tab.windowId);
@@ -60,20 +67,31 @@ async function trustedClick(tabId, x, y) {
     await chrome.tabs.update(tabId, {active: true});
     await chrome.windows.update(tab.windowId, {focused: true});
     // Clipboard operations require a focused document. Give Chrome enough
-    // time to transfer focus before dispatching the trusted mouse event.
+    // time to transfer focus before dispatching the trusted keyboard event.
     await new Promise(resolve => setTimeout(resolve, 500));
   }
+}
+
+async function trustedCopySelection(tabId) {
+  await focusTab(tabId);
   const target = {tabId};
   await chrome.debugger.attach(target, "1.3");
   try {
-    await chrome.debugger.sendCommand(target, "Input.dispatchMouseEvent", {
-      type: "mouseMoved", x, y
+    await chrome.debugger.sendCommand(target, "Input.dispatchKeyEvent", {
+      type: "keyDown", key: "Control", code: "ControlLeft", modifiers: 2,
+      windowsVirtualKeyCode: 17, nativeVirtualKeyCode: 17
     });
-    await chrome.debugger.sendCommand(target, "Input.dispatchMouseEvent", {
-      type: "mousePressed", x, y, button: "left", clickCount: 1
+    await chrome.debugger.sendCommand(target, "Input.dispatchKeyEvent", {
+      type: "keyDown", key: "c", code: "KeyC", modifiers: 2,
+      windowsVirtualKeyCode: 67, nativeVirtualKeyCode: 67
     });
-    await chrome.debugger.sendCommand(target, "Input.dispatchMouseEvent", {
-      type: "mouseReleased", x, y, button: "left", clickCount: 1
+    await chrome.debugger.sendCommand(target, "Input.dispatchKeyEvent", {
+      type: "keyUp", key: "c", code: "KeyC", modifiers: 2,
+      windowsVirtualKeyCode: 67, nativeVirtualKeyCode: 67
+    });
+    await chrome.debugger.sendCommand(target, "Input.dispatchKeyEvent", {
+      type: "keyUp", key: "Control", code: "ControlLeft", modifiers: 0,
+      windowsVirtualKeyCode: 17, nativeVirtualKeyCode: 17
     });
   } finally {
     await chrome.debugger.detach(target).catch(() => {});
@@ -151,12 +169,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.type === "open-output") {
       const result = await api("/api/open-output", {method: "POST", body: "{}"});
       sendResponse({ok: true, ...result});
+    } else if (message.type === "copy-answer-to-word") {
+      const config = await settings();
+      if (config.running) throw new Error("请先停止自动任务队列，再使用手动复制功能");
+      const tab = await latestChatTab();
+      await ensureContentScript(tab.id);
+      const result = await chrome.tabs.sendMessage(tab.id, {
+        type: "copy-latest-answer-to-task",
+        taskId: message.taskId
+      });
+      if (!result?.ok) throw new Error(result?.error || "归档当前回答失败");
+      sendResponse({ok: true, ...result});
     } else if (message.type === "should-run-here") {
       const config = await settings();
       sendResponse({ok: true, shouldRun: Boolean(config.running && sender.tab?.id === config.controlledTabId)});
-    } else if (message.type === "trusted-click") {
+    } else if (message.type === "trusted-copy-selection") {
       if (!sender.tab?.id) throw new Error("无法确定 ChatGPT 标签页");
-      await trustedClick(sender.tab.id, Number(message.x), Number(message.y));
+      await trustedCopySelection(sender.tab.id);
       sendResponse({ok: true});
     } else if (message.type === "next-task") {
       const config = await settings();

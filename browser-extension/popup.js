@@ -111,6 +111,18 @@ byId("openOutput").addEventListener("click", async () => {
   } catch (error) { byId("status").textContent = error.message; }
 });
 
+byId("copyAnswerToWord").addEventListener("click", async () => {
+  try {
+    const ids = [...selectedIds()];
+    if (ids.length !== 1) throw new Error("请只勾选一个要归档回答的论文任务");
+    await saveConnection();
+    byId("status").textContent = `正在把当前 GPT 回答归档到任务 ${ids[0]}……`;
+    const result = await call({type: "copy-answer-to-word", taskId: ids[0]});
+    await loadTasks({preserve: false});
+    byId("status").textContent = result.message;
+  } catch (error) { byId("status").textContent = error.message; }
+});
+
 byId("selectIncomplete").addEventListener("click", () => {
   const wanted = new Set(tasks.filter(task => task.status !== "completed").map(task => task.task_id));
   const checkboxes = [...document.querySelectorAll('#tasks input[type="checkbox"]')];

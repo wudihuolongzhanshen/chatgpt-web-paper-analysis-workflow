@@ -350,8 +350,8 @@ class WorkflowHandler(BaseHTTPRequestHandler):
         chat_url = str(body.get("chat_url", "")).strip()
         if len(response) < 500:
             raise ValueError("网页回答过短，拒绝归档")
-        if response_source != "chatgpt_copy_button" or not clipboard_verified:
-            raise ValueError("只允许经验证的 ChatGPT 复制按钮内容进入 Word；HTML 回退已关闭")
+        if response_source != "chatgpt_selected_response" or not clipboard_verified:
+            raise ValueError("只允许网页选中并经剪贴板校验的 ChatGPT 回答进入 Word；HTML 回退已关闭")
         with LOCK:
             rows = read_progress()
             row = find_task(rows, task_id)

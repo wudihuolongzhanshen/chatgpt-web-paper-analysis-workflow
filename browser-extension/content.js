@@ -81,7 +81,7 @@ async function waitForAnswer() {
       if (Date.now() - stableSince > 5000) {
         const assistant = assistants[assistants.length - 1];
         const formatted = assistant.querySelector(".markdown, .prose, [class*='markdown']") || assistant;
-        return {text: latest, html: formatted.innerHTML, assistant};
+        return {text: latest, html: formatted.innerHTML, assistant, formatted};
       }
     } else {
       stableSince = 0;
@@ -93,26 +93,18 @@ async function waitForAnswer() {
 }
 
 async function readCopiedAnswer(answer) {
-  const assistant = answer.assistant;
-  const turn = assistant.closest('article, [data-testid^="conversation-turn-"]') || assistant.parentElement;
-  const scope = turn || assistant;
-  let copyButton = scope.querySelector('[data-testid="copy-turn-action-button"]');
-  if (!copyButton) {
-    const allowedLabels = new Set(["copy", "copy response", "复制", "复制回答"]);
-    const candidates = [...scope.querySelectorAll("button[aria-label]")].filter(button =>
-      allowedLabels.has((button.getAttribute("aria-label") || "").trim().toLowerCase())
-    );
-    copyButton = candidates.length ? candidates[candidates.length - 1] : null;
-  }
-  if (!copyButton) {
-    throw new Error("未找到当前 GPT 回答的复制按钮；已禁止 HTML 回退");
-  }
-
-  copyButton.scrollIntoView({block: "center", inline: "center"});
+  const formatted = answer.formatted || answer.assistant.querySelector(".markdown, .prose, [class*='markdown']") || answer.assistant;
+  formatted.scrollIntoView({block: "center", inline: "nearest"});
   await sleep(300);
-  const rect = copyButton.getBoundingClientRect();
-  if (!rect.width || !rect.height) {
-    throw new Error("当前 GPT 回答的复制按钮不可见");
+  const range = document.createRange();
+  range.selectNodeContents(formatted);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  const minimumSelectedLength = Math.min(500, Math.max(20, Math.floor(answer.text.length * 0.8)));
+  if (!selection.rangeCount || selection.toString().trim().length < minimumSelectedLength) {
+    selection.removeAllRanges();
+    throw new Error("无法在网页中完整选中当前 GPT 回答");
   }
   const canonical = text => text.normalize("NFKC").toLowerCase().replace(/[\p{P}\p{S}\s]+/gu, "");
   const expected = canonical(answer.text);
@@ -129,13 +121,9 @@ async function readCopiedAnswer(answer) {
   };
 
   let clipboardError = "";
-  for (let clickAttempt = 0; clickAttempt < 3; clickAttempt += 1) {
-    await message({type: "set-message", text: `${answer.assistant ? "正在切换到 ChatGPT 前台并复制回答" : "正在复制回答"}（${clickAttempt + 1}/3）`});
-    await message({
-      type: "trusted-click",
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2
-    });
+  for (let copyAttempt = 0; copyAttempt < 3; copyAttempt += 1) {
+    await message({type: "set-message", text: `已选中 GPT 回答，正在复制（${copyAttempt + 1}/3）`});
+    await message({type: "trusted-copy-selection"});
     for (let poll = 0; poll < 20; poll += 1) {
       await sleep(500);
       try {
@@ -143,7 +131,7 @@ async function readCopiedAnswer(answer) {
         if (clipboardMatches(copiedText)) {
           return {
             text: answer.text,
-            source: "chatgpt_copy_button",
+            source: "chatgpt_selected_response",
             clipboardVerified: true
           };
         }
@@ -155,7 +143,36 @@ async function readCopiedAnswer(answer) {
   }
   throw new Error(clipboardError
     ? `无法读取复制后的剪贴板：${clipboardError}`
-    : "复制回答后三次校验均不匹配当前回答，已拒绝启动 Word");
+    : "选中回答并复制后三次校验均不匹配当前回答，已拒绝启动 Word");
+}
+
+function latestFinishedAnswer() {
+  const stopButton = document.querySelector('[data-testid="stop-button"], button[aria-label*="停止"]');
+  if (stopButton) throw new Error("ChatGPT 仍在生成回答，请等待完成后再复制");
+  const assistants = document.querySelectorAll('[data-message-author-role="assistant"]');
+  if (!assistants.length) throw new Error("当前 ChatGPT 页面没有找到 GPT 回答");
+  const assistant = assistants[assistants.length - 1];
+  const formatted = assistant.querySelector(".markdown, .prose, [class*='markdown']") || assistant;
+  const text = formatted.innerText.trim();
+  if (text.length < 20) throw new Error("当前 GPT 回答为空或过短");
+  return {text, html: formatted.innerHTML, assistant, formatted};
+}
+
+async function copyLatestAnswerToTask(taskId) {
+  const answer = latestFinishedAnswer();
+  const copied = await readCopiedAnswer(answer);
+  const completed = await message({
+    type: "complete-task",
+    taskId,
+    response: copied.text,
+    responseSource: copied.source,
+    clipboardVerified: copied.clipboardVerified === true,
+    chatUrl: location.href
+  });
+  return {
+    ok: true,
+    message: `${taskId}: ${completed.result.status}（已归档到 output）`
+  };
 }
 
 async function processCurrentTask(task) {
@@ -217,6 +234,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.type === "run-queue" || request.type === "resume-task") {
     runQueue().then(() => sendResponse({ok: true})).catch(error => sendResponse({ok: false, error: error.message}));
+    return true;
+  }
+  if (request.type === "copy-latest-answer-to-task") {
+    copyLatestAnswerToTask(request.taskId).then(sendResponse).catch(error => sendResponse({ok: false, error: error.message}));
     return true;
   }
   return false;
